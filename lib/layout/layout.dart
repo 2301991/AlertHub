@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../theme/theme_controller.dart';
-import '../screens/home_screen.dart';
 import '../screens/alert_screen.dart';
 import '../screens/distress_screen.dart';
 import '../screens/history_screen.dart';
+import '../screens/home_screen.dart';
 import '../screens/settings_screen.dart';
+import '../theme/theme_controller.dart';
 
 class AppLayout extends StatefulWidget {
   final ThemeController themeController;
@@ -23,9 +23,9 @@ class _AppLayoutState extends State<AppLayout> {
 
   late final List<Widget> _pages = <Widget>[
     HomeScreen(onNavigate: _goToTab),
-    AlertScreen(),
+    AlertScreen(onAlertSaved: () => _goToTab(3)),
     const DistressScreen(),
-    HistoryScreen(),
+    const HistoryScreen(),
     SettingsScreen(themeController: widget.themeController),
   ];
 

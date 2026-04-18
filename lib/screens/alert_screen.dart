@@ -1,33 +1,75 @@
 import 'package:flutter/material.dart';
-import '../models/alert.dart';
+
 import '../data/app_state.dart';
+import '../models/alert.dart';
 
 class AlertScreen extends StatelessWidget {
-  AlertScreen({super.key});
+  final VoidCallback? onAlertSaved;
+
+  AlertScreen({super.key, this.onAlertSaved});
 
   final bool manualVerificationEnabled = true;
 
   Future<void> _submitAlert(BuildContext context) async {
-    final alert = Alert(
-      id: DateTime.now().toString(),
+    if (currentUserId == null || currentUserId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No logged in user found. Please login again.'),
+        ),
+      );
+      return;
+    }
+
+    final Alert alert = Alert(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: currentUserId,
       time: DateTime.now(),
       status: isOnline ? 'sent' : 'queued',
       response: isOnline ? 'Responders notified' : 'Waiting for network sync',
       eta: isOnline ? 'Approx. 8-15 mins' : 'ETA unavailable while offline',
       hasNotification: isOnline,
+      message: 'SOS triggered from AlertHub mobile app',
+      latitude: null,
+      longitude: null,
     );
 
     addAlert(alert);
 
+    if (isOnline) {
+      try {
+        final Map<String, dynamic> result = await sendAlertToServer(alert);
+
+        if (result['status'] != 'success') {
+          alert.status = 'queued';
+          alert.response = 'Server unavailable. Waiting for retry';
+          alert.eta = 'ETA unavailable while offline';
+          alert.hasNotification = false;
+          addAlert(alert);
+        }
+      } catch (_) {
+        alert.status = 'queued';
+        alert.response = 'Upload failed. Waiting for retry';
+        alert.eta = 'ETA unavailable while offline';
+        alert.hasNotification = false;
+        addAlert(alert);
+      }
+    }
+
+    if (!context.mounted) {
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isOnline
-              ? 'Alert sent to officials successfully'
-              : 'No signal. Alert queued and will sync once network returns',
+          alert.status == 'sent'
+              ? 'SOS sent to API and recorded in history'
+              : 'SOS saved in history and queued for API retry',
         ),
       ),
     );
+
+    onAlertSaved?.call();
   }
 
   Future<void> _confirmAndSend(BuildContext context) async {
@@ -36,7 +78,7 @@ class AlertScreen extends StatelessWidget {
       return;
     }
 
-    final confirmed = await showModalBottomSheet<bool>(
+    final bool? confirmed = await showModalBottomSheet<bool>(
       context: context,
       showDragHandle: true,
       builder: (ctx) {

@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../data/app_state.dart';
 import '../layout/layout.dart';
 import '../theme/theme_controller.dart';
 import 'register_screen.dart';
@@ -34,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = true);
 
-    final url = Uri.parse('https://webhoster3b.com/alerthub/api/login_user.php');
+    final Uri url = Uri.parse('https://webhoster3b.com/alerthub/api/login_user.php');
 
     try {
       final response = await http.post(
@@ -46,10 +48,21 @@ class _LoginScreenState extends State<LoginScreen> {
         }),
       );
 
-      final data = jsonDecode(response.body);
+      final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (data['status'] == 'success') {
-        if (!mounted) return;
+        final Map<String, dynamic> user = data['user'] as Map<String, dynamic>;
+
+        setLoggedInUser(
+          userId: user['id'].toString(),
+          name: user['name'].toString(),
+          email: user['email'].toString(),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -57,14 +70,14 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       } else {
-        _showMsg(data['message'] ?? 'Login failed.');
+        _showMsg(data['message']?.toString() ?? 'Login failed.');
       }
-    } catch (e) {
+    } catch (_) {
       _showMsg('Connection error.');
-    }
-
-    if (mounted) {
-      setState(() => _loading = false);
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -83,15 +96,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor =
+    final Color bgColor =
         isDark ? const Color(0xFF0B1220) : const Color(0xFFF4F7FF);
-    final cardColor =
+    final Color cardColor =
         isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB);
-    final textColor = isDark ? Colors.white : Colors.black;
-    final subTextColor = isDark ? Colors.white70 : Colors.black87;
-    final fieldFill = isDark ? const Color(0xFF4B5563) : Colors.white;
+    final Color textColor = isDark ? Colors.white : Colors.black;
+    final Color subTextColor = isDark ? Colors.white70 : Colors.black87;
+    final Color fieldFill = isDark ? const Color(0xFF4B5563) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -140,7 +153,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -181,9 +193,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.email_outlined, color: textColor),
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -237,9 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -271,16 +279,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                     ),
                   ),
-
                   const SizedBox(height: 14),
-
                   TextButton(
                     onPressed: () {
                       _showMsg('Forgot password page not connected yet.');
                     },
                     child: const Text('Forgot Password?'),
                   ),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
