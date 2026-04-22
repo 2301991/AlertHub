@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -11,10 +10,7 @@ import 'register_screen.dart';
 class LoginScreen extends StatefulWidget {
   final ThemeController themeController;
 
-  const LoginScreen({
-    super.key,
-    required this.themeController,
-  });
+  const LoginScreen({super.key, required this.themeController});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -36,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = true);
 
-    final Uri url = Uri.parse('https://webhoster3b.com/alerthub/api/login_user.php');
+    final url = Uri.parse('https://webhoster3b.com/alerthub/api/login_user.php');
 
     try {
       final response = await http.post(
@@ -48,21 +44,17 @@ class _LoginScreenState extends State<LoginScreen> {
         }),
       );
 
-      final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = jsonDecode(response.body);
 
       if (data['status'] == 'success') {
-        final Map<String, dynamic> user = data['user'] as Map<String, dynamic>;
-
+        final user = data['user'] as Map<String, dynamic>;
         setLoggedInUser(
-          userId: user['id'].toString(),
+          userId: int.parse(user['id'].toString()),
           name: user['name'].toString(),
           email: user['email'].toString(),
         );
 
-        if (!mounted) {
-          return;
-        }
-
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -70,21 +62,19 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       } else {
-        _showMsg(data['message']?.toString() ?? 'Login failed.');
+        _showMsg(data['message'] ?? 'Login failed.');
       }
     } catch (_) {
       _showMsg('Connection error.');
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+    }
+
+    if (mounted) {
+      setState(() => _loading = false);
     }
   }
 
   void _showMsg(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -96,15 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final Color bgColor =
-        isDark ? const Color(0xFF0B1220) : const Color(0xFFF4F7FF);
-    final Color cardColor =
-        isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB);
-    final Color textColor = isDark ? Colors.white : Colors.black;
-    final Color subTextColor = isDark ? Colors.white70 : Colors.black87;
-    final Color fieldFill = isDark ? const Color(0xFF4B5563) : Colors.white;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0B1220) : const Color(0xFFF4F7FF);
+    final cardColor = isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB);
+    final textColor = isDark ? Colors.white : Colors.black;
+    final subTextColor = isDark ? Colors.white70 : Colors.black87;
+    final fieldFill = isDark ? const Color(0xFF4B5563) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -130,11 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.shield_outlined,
-                    size: 54,
-                    color: textColor,
-                  ),
+                  Icon(Icons.shield_outlined, size: 54, color: textColor),
                   const SizedBox(height: 10),
                   Text(
                     'AlertHub Login',
@@ -147,10 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'Secure user access portal',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: subTextColor,
-                    ),
+                    style: TextStyle(fontSize: 14, color: subTextColor),
                   ),
                   const SizedBox(height: 24),
                   Align(
@@ -175,20 +155,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       fillColor: fieldFill,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: Colors.black, width: 1.5),
+                        borderSide: const BorderSide(color: Colors.black, width: 1.5),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: Colors.black, width: 1.5),
+                        borderSide: const BorderSide(color: Colors.black, width: 1.5),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF2563EB),
-                          width: 2,
-                        ),
+                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
                       ),
                       prefixIcon: Icon(Icons.email_outlined, color: textColor),
                     ),
@@ -216,27 +191,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       fillColor: fieldFill,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: Colors.black, width: 1.5),
+                        borderSide: const BorderSide(color: Colors.black, width: 1.5),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: Colors.black, width: 1.5),
+                        borderSide: const BorderSide(color: Colors.black, width: 1.5),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF2563EB),
-                          width: 2,
-                        ),
+                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
                       ),
                       prefixIcon: Icon(Icons.lock_outline, color: textColor),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
                           color: textColor,
                         ),
                         onPressed: () {
@@ -272,34 +240,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             )
                           : const Text(
                               'Login',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                             ),
                     ),
                   ),
                   const SizedBox(height: 14),
                   TextButton(
-                    onPressed: () {
-                      _showMsg('Forgot password page not connected yet.');
-                    },
+                    onPressed: () => _showMsg('Forgot password page not connected yet.'),
                     child: const Text('Forgot Password?'),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'No account yet? ',
-                        style: TextStyle(color: subTextColor),
-                      ),
+                      Text('No account yet? ', style: TextStyle(color: subTextColor)),
                       TextButton(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
+                            MaterialPageRoute(builder: (_) => const RegisterScreen()),
                           );
                         },
                         child: const Text('Register'),

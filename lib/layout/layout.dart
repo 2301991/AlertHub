@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../theme/theme_controller.dart';
+import '../screens/home_screen.dart';
 import '../screens/alert_screen.dart';
 import '../screens/distress_screen.dart';
 import '../screens/history_screen.dart';
-import '../screens/home_screen.dart';
 import '../screens/settings_screen.dart';
-import '../theme/theme_controller.dart';
+import '../screens/login_screen.dart';
+import '../data/app_state.dart';
 
 class AppLayout extends StatefulWidget {
   final ThemeController themeController;
@@ -21,18 +23,46 @@ class _AppLayoutState extends State<AppLayout> {
 
   void _goToTab(int index) => setState(() => _index = index);
 
+  Future<void> _logout() async {
+    stopDistressLoop();
+    alerts.clear();
+    queueNotifier.value = 0;
+    distressActiveNotifier.value = false;
+
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LoginScreen(themeController: widget.themeController),
+      ),
+      (route) => false,
+    );
+  }
+
   late final List<Widget> _pages = <Widget>[
     HomeScreen(onNavigate: _goToTab),
-    AlertScreen(onAlertSaved: () => _goToTab(3)),
+    AlertScreen(),
     const DistressScreen(),
-    const HistoryScreen(),
-    SettingsScreen(themeController: widget.themeController),
+    HistoryScreen(),
+    SettingsScreen(
+      themeController: widget.themeController,
+      onLogout: _logout,
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titleForIndex(_index))),
+      appBar: AppBar(
+        title: Text(_titleForIndex(_index)),
+        actions: [
+          IconButton(
+            tooltip: 'Log out',
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+          ),
+        ],
+      ),
       body: IndexedStack(index: _index, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,

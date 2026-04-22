@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_state.dart';
+
 class DistressScreen extends StatefulWidget {
   const DistressScreen({super.key});
 
@@ -8,7 +10,26 @@ class DistressScreen extends StatefulWidget {
 }
 
 class _DistressScreenState extends State<DistressScreen> {
-  bool _active = false;
+  bool _armed = false;
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  Future<void> _manualSignal() async {
+    await sendDistressSignal();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isOnline
+              ? 'Distress signal sent and saved'
+              : 'No signal. Distress queued and will sync when back online',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,42 +44,91 @@ class _DistressScreenState extends State<DistressScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Activates flashlight, sound alarm, and triggers nearby notifications.',
+            'Long press to activate repeated distress signals.',
           ),
           const SizedBox(height: 18),
           Card(
             child: SwitchListTile(
-              value: _active,
+              value: _armed,
               title: const Text('Enable Distress Mode'),
-              subtitle: Text(_active ? 'Distress Active' : 'Distress Inactive'),
+              subtitle: Text(_armed ? 'DISTRESS ACTIVE' : 'Distress Inactive'),
               onChanged: (v) {
-                setState(() => _active = v);
+                setState(() => _armed = v);
+                if (!v) {
+                  stopDistressLoop();
+                }
               },
             ),
           ),
           const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Text(
-                _active
-                    ? 'Prototype mode: Distress feature is active. Flashlight, alarm, and nearby responder notification are for next integration phase.'
-                    : 'Turn on Distress Mode to simulate emergency activation.',
+          ValueListenableBuilder<bool>(
+            valueListenable: networkNotifier,
+            builder: (_, online, __) => Text(
+              online ? 'Network: Online' : 'Network: Offline',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: online ? Colors.green : Colors.orange,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<DateTime?>(
+            valueListenable: lastDistressTimeNotifier,
+            builder: (_, lastTime, __) => Text(
+              lastTime == null
+                  ? 'Last signal: No signals yet'
+                  : 'Last signal: ${lastTime.toLocal().toString().split('.').first}',
+            ),
+          ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<int>(
+            valueListenable: queueNotifier,
+            builder: (_, queuedCount, __) => Text(
+              'Queued signals: $queuedCount',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<String>(
+            valueListenable: responderStatusNotifier,
+            builder: (_, status, __) => Text('Responder simulation: $status'),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onLongPress: !_armed
+                ? null
+                : () {
+                    startDistressLoop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('DISTRESS ACTIVATED')),
+                    );
+                  },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: _armed ? Colors.red : Colors.grey,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  _armed ? 'HOLD TO ACTIVATE DISTRESS' : 'ENABLE DISTRESS FIRST',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: _active
-                ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Prototype: Nearby responders would be notified here'),
-                      ),
-                    );
-                  }
-                : null,
-            child: const Text('Notify Nearby Now'),
+            onPressed: _armed ? _manualSignal : null,
+            child: const Text('Send Single Distress Signal Now'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: distressActiveNotifier.value ? stopDistressLoop : null,
+            child: const Text('Stop Distress Loop'),
           ),
         ],
       ),
