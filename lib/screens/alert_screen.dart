@@ -7,16 +7,20 @@ class AlertScreen extends StatelessWidget {
   final bool manualVerificationEnabled = true;
 
   Future<void> _submitAlert(BuildContext context) async {
-    await sendEmergencyAlert();
+    // sendEmergencyAlert() no longer touches BuildContext internally —
+    // we get the result back and show feedback here, safely.
+    final alert = await sendEmergencyAlert();
 
     if (!context.mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isOnline
-              ? 'Emergency alert sent and saved'
-              : 'No signal. Alert queued and will sync once network returns',
+          alert.status == 'queued'
+              ? 'No signal. Alert saved locally and will sync once network returns.'
+              : 'Emergency alert sent and saved.',
         ),
+        backgroundColor: alert.status == 'queued' ? Colors.orange : Colors.green,
       ),
     );
   }
@@ -67,6 +71,7 @@ class AlertScreen extends StatelessWidget {
     );
 
     if (confirmed == true) {
+      if (!context.mounted) return;
       await _submitAlert(context);
     }
   }
@@ -92,12 +97,22 @@ class AlertScreen extends StatelessWidget {
           ValueListenableBuilder<bool>(
             valueListenable: networkNotifier,
             builder: (context, online, _) {
-              return Text(
-                online ? 'Current Network: Online' : 'Current Network: Offline',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: online ? Colors.green : Colors.orange,
-                ),
+              return Row(
+                children: [
+                  Icon(
+                    online ? Icons.wifi : Icons.wifi_off,
+                    size: 16,
+                    color: online ? Colors.green : Colors.orange,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    online ? 'Online — alert will be sent immediately' : 'Offline — alert will be queued',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: online ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -105,9 +120,27 @@ class AlertScreen extends StatelessWidget {
           ValueListenableBuilder<int>(
             valueListenable: queueNotifier,
             builder: (context, queuedCount, _) {
-              return Text(
-                'Queued Alerts: $queuedCount',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+              if (queuedCount == 0) return const SizedBox.shrink();
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.schedule_send, size: 16, color: Colors.amber.shade800),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$queuedCount queued alert${queuedCount == 1 ? '' : 's'} pending sync',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
