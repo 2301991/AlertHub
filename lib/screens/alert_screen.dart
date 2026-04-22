@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../data/app_state.dart';
 
 class AlertScreen extends StatelessWidget {

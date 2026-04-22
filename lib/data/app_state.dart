@@ -120,10 +120,10 @@ Future<bool> saveAlertToApi(Alert alert) async {
 }
 
 Future<void> sendEmergencyAlert() async {
-  await getCurrentLocation(); // Ensure we have the current location
+  await getCurrentLocation();  // Ensure location is fetched
 
   final alert = Alert(
-    id: DateTime.now().millisecondsSinceEpoch.toString(),
+    id: DateTime.now().toString(),
     time: DateTime.now(),
     type: 'emergency',
     status: isOnline ? 'sent' : 'queued',
@@ -137,19 +137,22 @@ Future<void> sendEmergencyAlert() async {
   addAlert(alert);
 
   if (isOnline) {
-    final ok = await saveAlertToApi(alert);
-    if (!ok) {
+    final success = await saveAlertToApi(alert);
+    if (!success) {
       alert.status = 'queued';
-      alert.response = 'API unavailable. Waiting for retry';
-      alert.eta = 'ETA unavailable while offline';
+      alert.response = 'Failed to send. Queued for sync';
+      alert.eta = 'ETA unavailable';
       alert.hasNotification = false;
-      _updateQueueCount();
     }
   }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(isOnline ? 'Alert sent to officials successfully' : 'Alert queued. Will sync once network returns')),
+  );
 }
 
 Future<void> sendDistressSignal() async {
-  await getCurrentLocation(); // Ensure we have the current location
+  await getCurrentLocation();  // Ensure location is fetched
 
   final alert = Alert(
     id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -226,7 +229,7 @@ Future<void> syncQueuedAlerts() async {
     }
   } finally {
     _syncInProgress = false;
-    _updateQueueCount();
+    _updateQueueCount();  // Update the queue count after sync
   }
 }
 

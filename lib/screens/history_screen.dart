@@ -57,8 +57,7 @@ class HistoryScreen extends StatelessWidget {
                 // Optional: Add a clickable map link
                 TextButton(
                   onPressed: () {
-                    // Open in Google Maps when user taps the location
-                    _openMap(alert.latitude, alert.longitude);
+                    _openMap(alert.latitude, alert.longitude);  // Open in Google Maps
                   },
                   child: const Text('View on Map'),
                 ),
