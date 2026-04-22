@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart'; // Correct geolocator import
 
 import '../models/alert.dart';
 
@@ -14,8 +14,7 @@ ValueNotifier<bool> networkNotifier = ValueNotifier<bool>(true);
 ValueNotifier<int> queueNotifier = ValueNotifier<int>(0);
 ValueNotifier<bool> distressActiveNotifier = ValueNotifier<bool>(false);
 ValueNotifier<DateTime?> lastDistressTimeNotifier = ValueNotifier<DateTime?>(null);
-ValueNotifier<String> responderStatusNotifier =
-    ValueNotifier<String>('No distress signal yet');
+ValueNotifier<String> responderStatusNotifier = ValueNotifier<String>('No distress signal yet');
 
 bool get isOnline => networkNotifier.value;
 
@@ -25,6 +24,37 @@ String? currentUserEmail;
 
 Timer? _distressTimer;
 bool _syncInProgress = false;
+
+Position? currentLocation; // Variable to store current location
+
+// Fetch the current location using geolocator
+Future<void> getCurrentLocation() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  // Check if location services are enabled
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    return Future.error('Location services are disabled.');
+  }
+
+  // Check for location permissions
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      return Future.error('Location permissions are denied.');
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    return Future.error('Location permissions are permanently denied.');
+  }
+
+  // Get current location
+  currentLocation = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  print('Current Location: ${currentLocation!.latitude}, ${currentLocation!.longitude}');
+}
 
 void setLoggedInUser({
   required int userId,
@@ -79,7 +109,7 @@ Future<bool> saveAlertToApi(Alert alert) async {
 
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 && data['status'] == 'success') {
-      alert.serverId = int.tryParse((data['alert_id'] ?? '').toString());
+      alert.serverId = int.tryParse((data['alert_id'] ?? '').toString()); // Assign serverId
       return true;
     }
   } catch (_) {
@@ -90,6 +120,8 @@ Future<bool> saveAlertToApi(Alert alert) async {
 }
 
 Future<void> sendEmergencyAlert() async {
+  await getCurrentLocation(); // Ensure we have the current location
+
   final alert = Alert(
     id: DateTime.now().millisecondsSinceEpoch.toString(),
     time: DateTime.now(),
@@ -98,6 +130,8 @@ Future<void> sendEmergencyAlert() async {
     response: isOnline ? 'Responders notified' : 'Waiting for network sync',
     eta: isOnline ? 'Approx. 8-15 mins' : 'ETA unavailable while offline',
     hasNotification: isOnline,
+    latitude: currentLocation?.latitude ?? 0.0,   // Use the current latitude
+    longitude: currentLocation?.longitude ?? 0.0, // Use the current longitude
   );
 
   addAlert(alert);
@@ -115,6 +149,8 @@ Future<void> sendEmergencyAlert() async {
 }
 
 Future<void> sendDistressSignal() async {
+  await getCurrentLocation(); // Ensure we have the current location
+
   final alert = Alert(
     id: DateTime.now().millisecondsSinceEpoch.toString(),
     time: DateTime.now(),
@@ -123,6 +159,8 @@ Future<void> sendDistressSignal() async {
     response: isOnline ? 'Distress signal received' : 'Waiting for network sync',
     eta: isOnline ? 'Responders tracking signal' : 'ETA unavailable while offline',
     hasNotification: isOnline,
+    latitude: currentLocation?.latitude ?? 0.0,   // Use the current latitude
+    longitude: currentLocation?.longitude ?? 0.0, // Use the current longitude
   );
 
   addAlert(alert);
